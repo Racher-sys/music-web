@@ -124,9 +124,11 @@ display: flex;
   }
   
 `
+interface IPlayOperator {
+  playMode: number
+}
 
-
-export const PlayOperatorWrapper = styled.div`
+export const PlayOperatorWrapper = styled.div<IPlayOperator>`
 display: flex;
 position: relative;
 top: 5px;
@@ -156,9 +158,17 @@ top: 5px;
     }
 
     .loop {
-      background-position: -66px -248px;
+      background-position: ${(props) => {
+        switch(props.playMode) {
+          case 0:  // 顺序播放
+            return '-3px -344px'
+          case 1: // 随机播放
+            return '-66px -248px'
+          case 2:  // 单曲循环
+            return '-66px -344px'
+        }
+      }};
     }
-
     .playlist {
       padding-left: 18px;
       text-align: center;

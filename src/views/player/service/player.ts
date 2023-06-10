@@ -7,3 +7,10 @@ export function getSongDetail(ids: number){
         params: {ids}
     })
 }
+
+export function getSongLyric(id: number){
+    return hyRequest.get({
+        url: '/lyric',
+        params: {id}
+    })
+}

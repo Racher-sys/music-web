@@ -1,19 +1,24 @@
 import React, {memo, useEffect, useRef, useState} from "react";
 import type { FC, ReactNode } from "react";
 import { PlayBarWrapper, PlayControlWrapper, PlayInfoWrapper, PlayOperatorWrapper } from "./style";
-import { Slider } from "antd";
+import { Slider, message } from "antd";
 import { Link } from "react-router-dom";
-import { shallowEqualApp, useAppSelector } from "@/store";
+import { shallowEqualApp, useAppDispatch, useAppSelector } from "@/store";
 import { formatImageUrl, getSongPlayUrl, formatTime} from "@/utils/format";
+import { changeLyricIndexAction, changeMusicAction, changePlayModeAction } from "../store/player";
 interface IProps{
     children?: ReactNode,
 }
 
 const PlayerBar: FC<IProps> = () =>{
-    const {currentSong} = useAppSelector((state) => ({
-        currentSong: state.player.currentSong
+    const {currentSong, lyrics, lyricIndex, playMode} = useAppSelector((state) => ({
+        currentSong: state.player.currentSong,
+        lyrics: state.player.lyrics,
+        lyricIndex: state.player.lyricIndex,
+        playMode: state.player.playMode
     }), shallowEqualApp)
 
+    const dispatch = useAppDispatch()
     const audioRef = useRef<HTMLAudioElement>(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const [progress, setProgress] = useState(0)
@@ -33,6 +38,8 @@ const PlayerBar: FC<IProps> = () =>{
             setIsPlaying(false)
             console.log('歌曲播放失败：', err)
         })
+
+        
 
         // 2. 获取音乐的总时长
         setDuration(currentSong.dt)
@@ -66,6 +73,29 @@ const PlayerBar: FC<IProps> = () =>{
             setCurrentTime(currentTime)
         }
 
+        let index = lyrics.length -1
+        for (let i = 0; i <  lyrics.length; i ++){
+            const lyric = lyrics[i]
+            if (lyric.time > currentTime){
+                index = i - 1
+                break
+            }
+        }
+        
+        if(lyricIndex === index || index === -1) return
+        console.log(playMode)
+
+        dispatch(changeLyricIndexAction(index))
+
+        console.log(lyrics[index]?.text)
+
+        message.open({
+            content: lyrics[index]?.text,
+            duration: 0,
+            key: 'lyrics'
+        })
+
+
         
     }
 
@@ -95,13 +125,36 @@ const PlayerBar: FC<IProps> = () =>{
         setProgress(value)
     }
 
+    /** 处理如何点击切换播放模式 */
+    function handlChangePlayMode(){
+        let newPlayMode = playMode + 1
+        if (newPlayMode > 2) newPlayMode = 0
+
+        dispatch(changePlayModeAction(newPlayMode))
+    }
+
+    /** 处理切换音乐 */
+    function handleChangeMusic(isNext = true){
+        dispatch(changeMusicAction(isNext))
+    }
+
+    /** 处理当音乐播放完之后转换到下一首歌 */
+    function handleTimeEnded(){
+        // 当前播放模式为单曲循环
+        if (playMode === 2){
+            audioRef.current!.currentTime = 0
+            audioRef.current?.play()
+        }else{
+            handleChangeMusic(true)
+        }
+    }
     return <PlayBarWrapper className="sprite_playbar">
         <div className="content wrap-v2">
             <PlayControlWrapper isPlaying = {isPlaying}>
 
-                <button className="btn sprite_playbar pre"></button>
+                <button className="btn sprite_playbar pre" onClick={() => handleChangeMusic(false)}></button>
                 <button className="btn sprite_playbar play"  onClick={handlePlayBtnClick}></button>
-                <button className="btn sprite_playbar next" ></button>
+                <button className="btn sprite_playbar next" onClick={() => handleChangeMusic(false)}></button>
             </PlayControlWrapper>
             <PlayInfoWrapper>
                 <Link to="/player">
@@ -111,7 +164,7 @@ const PlayerBar: FC<IProps> = () =>{
                 <div className="info">
                     <div className="song">
                         <span className="song-name">{currentSong?.name}</span>
-                        <span className="singer-name">{currentSong.ar[0]?.name}</span>
+                        <span className="singer-name">{currentSong?.ar?.[0]?.name}</span>
                     </div>
 
                     <div className="progress">
@@ -131,19 +184,19 @@ const PlayerBar: FC<IProps> = () =>{
                 
                 
             </PlayInfoWrapper>
-            <PlayOperatorWrapper>
+            <PlayOperatorWrapper playMode={playMode}>
                 <div className="left">
                     <button className="sprite_playbar btn favor"></button>
                     <button className="sprite_playbar btn share"></button>
                 </div>
                 <div className=" sprite_playbar right">
                     <button className="sprite_playbar btn volume"></button>
-                    <button className="sprite_playbar btn loop"></button>
+                    <button className="sprite_playbar btn loop" onClick={handlChangePlayMode}></button>
                     <button className="sprite_playbar btn playlist"></button>
                 </div>
             </PlayOperatorWrapper>
 
-            <audio ref={audioRef} onTimeUpdate={handleTimeUpdata}/>
+            <audio ref={audioRef} onTimeUpdate={handleTimeUpdata} onEnded={handleTimeEnded}/>
         </div>
     </PlayBarWrapper>
 }

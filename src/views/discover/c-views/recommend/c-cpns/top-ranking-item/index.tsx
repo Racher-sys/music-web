@@ -2,16 +2,26 @@ import React, {memo} from "react";
 import type { FC, ReactNode } from "react";
 import { TopRankingItemWrapper } from "./style";
 import { formatImageUrl } from "@/utils/format";
+import { useAppDispatch } from "@/store";
+import { fetchCurrentSongAction } from "@/views/player/store/player";
 
 interface IProps{
     children?: ReactNode,
     itemData: any
 }
 
+
+
 const TopRankingItem: FC<IProps> = (props) =>{
     const {itemData} = props 
 
     const { tracks = []} = itemData
+
+    const dispatch = useAppDispatch()
+
+    function handlePlayClick(id:number){
+        dispatch(fetchCurrentSongAction(id))
+    }
 
     return <TopRankingItemWrapper>
         <div className="header">
@@ -22,7 +32,7 @@ const TopRankingItem: FC<IProps> = (props) =>{
             <div className="info">
                 <div className="name"><h3>{itemData.name}</h3></div>
                 <div>
-                    <button className="sprite_02 btn play"></button>
+                    <button className="sprite_02 btn play" ></button>
                     <button className="sprite_02 btn favor"></button>
                 </div>
             </div>
@@ -35,7 +45,7 @@ const TopRankingItem: FC<IProps> = (props) =>{
                         <div className="info">
                             <div className="name">{item.name}</div>
                             <div className="operator">
-                                <button className="btn sprite_02 play"></button>
+                                <button className="btn sprite_02 play" onClick={() => handlePlayClick(item.id)}></button>
                                 <button className="btn sprite_icon2 add"></button>
                                 <button className="btn sprite_02 favor"></button>
                             </div>
